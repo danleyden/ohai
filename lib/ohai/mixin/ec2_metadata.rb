@@ -167,7 +167,16 @@ module Ohai
         api_version = best_api_version
         return nil if api_version.nil?
         response = http_client.get("/#{api_version}/user-data/")
-        response.code == "200" ? response.body : nil
+        body = response.code == "200" ? response.body : nil
+        begin
+          body.encode('utf-8') if body
+        rescue Encoding::UndefinedConversionError
+          body.define_singleton_method(:to_json) do |options=nil|
+            require 'base64'
+            Base64.encode64(body).strip.to_json(options)
+          end
+        end
+        body
       end
 
       private

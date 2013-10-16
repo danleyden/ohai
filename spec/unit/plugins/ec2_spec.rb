@@ -157,6 +157,20 @@ describe Ohai::System, "plugin ec2" do
 
       @plugin[:ec2].should_not be_nil
     end
+
+    it "should return serializable user-data" do
+      require 'json'
+      invalid_chars = "\x95".force_encoding(Encoding::ASCII_8BIT)
+      @http_client.should_receive(:get).
+        and_return(double("Net::HTTP Response", :body => "", :code => "200"))
+      @http_client.should_receive(:get).
+        with("/2012-01-12/user-data/").
+        and_return(double("Net::HTTP Response", :body => invalid_chars, :code => "200"))
+
+      @plugin.run
+
+      @plugin[:ec2][:userdata].to_json.should match /".*"/
+    end
   end
 
   describe "with ec2 mac and metadata address connected" do
